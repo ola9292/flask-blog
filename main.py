@@ -9,11 +9,17 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, current_user, login_manager, login_required, logout_user, UserMixin,login_user
 from dotenv import load_dotenv
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import os
 load_dotenv()
 
 secret_key = os.environ["SECRET_KEY"]
 db_uri = os.environ["SQLALCHEMY_DATABASE_URI"]
+my_email = os.environ["MY_EMAIL"]
+password = os.environ["PASSWORD"]
+smtp_address = "smtp.gmail.com"
 
 class Base(DeclarativeBase):
   pass
@@ -136,21 +142,23 @@ def about():
 
 #create new post
 @app.route('/new-post', methods=['POST','GET'])
-@login_required
 def create_post():
     form = PostForm()
-    if form.validate_on_submit():
-        post = BlogPost(
-            title=form.title.data,
-            subtitle=form.subtitle.data,
-            poster_id=current_user.id,
-            img_url=form.img_url.data,
-            date=datetime.now().strftime("%B %d, %Y"),
-            body=form.body.data
-        )
-        db.session.add(post)
-        db.session.commit()
-        return redirect(url_for('home'))
+    if current_user.is_authenticated:
+        if form.validate_on_submit():
+            post = BlogPost(
+                title=form.title.data,
+                subtitle=form.subtitle.data,
+                poster_id=current_user.id,
+                img_url=form.img_url.data,
+                date=datetime.now().strftime("%B %d, %Y"),
+                body=form.body.data
+            )
+            db.session.add(post)
+            db.session.commit()
+            return redirect(url_for('home'))
+    else:
+        return redirect(url_for('login'))
     return render_template("make-post.html", form=form)
 
 #edit post
@@ -192,16 +200,6 @@ def delete_post(id):
     else:
         flash("You are not authorized, you cheeky monkey")
         return redirect(url_for('home'))
-#delete post
-# @app.route('/comment/<int:id>', methods=['GET','POST'])
-# def create_comment(id):
-#     post = db.get_or_404(BlogPost, id)
-#     if form.validate_on_submit():
-#         comment = Comments(
-#             content = form.content.data
-#         )
-#     return redirect(url_for('home'))
-
 
 
 #contact page
@@ -213,6 +211,27 @@ def contact():
         print(form.email.data)
         print(form.phone.data)
         print(form.message.data)
+        message = MIMEMultipart()
+        message['From'] = my_email
+        message['To'] = "olamide.kazeem@yahoo.com"
+        message['Subject'] = "Contact Form Submitted"
+
+        body = f"Name: {request.form['name']}\nEmail: {request.form['email']}c\nPhone: {request.form['phone']}\nMessage: {request.form['message']}"
+
+        message.attach(MIMEText(body, 'plain'))
+
+        # Send email
+        connection = smtplib.SMTP(smtp_address)
+        connection.starttls()
+        connection.login(user=my_email, password=password)
+        connection.sendmail(
+            from_addr=my_email, 
+            to_addrs="olamide.kazeem@yahoo.com", 
+            msg=message.as_string()
+        )
+        connection.close()
+        flash("message sent successfully, I will be in touch shortly.")
+        return redirect(url_for('contact'))
     return render_template("contact.html", form=form)
 
 
