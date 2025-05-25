@@ -1,0 +1,64 @@
+{% include 'header.html' %}
+        <!-- Page Header-->
+        <header class="masthead" style="background-image: url('../static/assets/img/post-bg.jpg')">
+            <div class="container position-relative px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <div class="post-heading">
+                            <h1>{{ post.title }}</h1>
+                            <h2 class="subheading">{{ post.subtitle }}</h2>
+                            <span class="meta">
+                                Posted by
+                                <a href="#!">{{ post.poster.name }}</a>
+                                on {{ post.date }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <!-- Post Content-->
+        <article class="mb-4">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <p>{{ post.body | safe }}</p>
+                        {% if current_user.id == post.poster.id %}
+                            <div>
+                                <a href="{{ url_for('edit_post', id=post.id) }}" class="btn btn-primary text-uppercase">Edit Post</a>
+                                <a href="{{ url_for('delete_post', id=post.id) }}" class="btn btn-danger text-uppercase">Delete Post</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-10 col-lg-8 col-xl-7 mt-4">
+                        <form method="POST" action="{{ url_for('single_post', id=post.id) }}" novalidate>
+                            {{ form.csrf_token }}
+                            {{ form.content.label }}
+                            <div class="form-floating">
+                                {{ form.content(class="form-control") }} 
+                            </div>
+                            <br>
+                            <button class="btn btn-primary text-uppercase" type="submit">Submit comment</button>
+                        </form>
+                            {{ ckeditor.load() }}
+                            {{ ckeditor.config(name='content') }}
+                            <div class="comment">
+                                <ul class="commentList">
+                                    <!-- Show all comments -->
+                                    {% for comment in comments: %}
+                                    <li>
+                                        
+                                        <div class="commentText">
+                                            {{comment.content|safe}}
+                                            <span class="sub-text">{{comment.comment_author.name}}</span>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                        </div>
+                </div>
+            </div>
+            
+        </article>
+        
+{% include 'footer.html' %}
